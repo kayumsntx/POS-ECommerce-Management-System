@@ -42,5 +42,7 @@ namespace POSWebApi.Models
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public ICollection<Payment>   Payments   { get; set; } = new List<Payment>();
         public ICollection<Return>    Returns    { get; set; } = new List<Return>();
+
+        public string? CourierTrackingId { get; set; }
     }
 }

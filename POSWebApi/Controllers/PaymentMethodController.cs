@@ -47,57 +47,69 @@ namespace POSWebApi.Controllers
             return Ok(method);
         }
 
-      
+
         [HttpPost("create")]
-        public async Task<IActionResult> Create([FromBody] PaymentMethod method)
+        public async Task<IActionResult> Create([FromBody] CreatePaymentMethodDto dto)
         {
-           
+            if (string.IsNullOrWhiteSpace(dto.PayMethodType))
+                return BadRequest(new { message = "Payment method type is required." });
+
             bool typeExists = await _db.PaymentMethods
-                .AnyAsync(pm => pm.PayMethodType.ToLower() == method.PayMethodType.ToLower());
+                .AnyAsync(pm => pm.PayMethodType.ToLower() == dto.PayMethodType.Trim().ToLower());
 
             if (typeExists)
-                return BadRequest(new { message = $"Payment method '{method.PayMethodType}' already exists." });
+                return BadRequest(new { message = $"Payment method '{dto.PayMethodType}' already exists." });
 
-            
-            method.PaymentMethodId = 0;
-            method.Payments        = new List<Payment>();
+            var method = new PaymentMethod
+            {
+                PayMethodType = dto.PayMethodType.Trim()
+            };
 
             _db.PaymentMethods.Add(method);
             await _db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = method.PaymentMethodId },
-                new { method.PaymentMethodId, method.PayMethodType });
-        }
+            var response = new PaymentMethodResponseDto
+            {
+                PaymentMethodId = method.PaymentMethodId,
+                PayMethodType = method.PayMethodType
+            };
 
+            return CreatedAtAction(nameof(GetById), new { id = method.PaymentMethodId }, response);
+        }
+        //================================Update=========================
         [HttpPut("update/{id:int}")]
-        public async Task<IActionResult> Update(int id, [FromBody] PaymentMethod updated)
+        public async Task<IActionResult> Update(int id, [FromBody] CreatePaymentMethodDto dto)
         {
             var method = await _db.PaymentMethods.FindAsync(id);
 
             if (method == null)
                 return NotFound(new { message = $"Payment method with ID {id} not found." });
 
-            // Check duplicate type (excluding this record)
             bool typeExists = await _db.PaymentMethods
-                .AnyAsync(pm => pm.PayMethodType.ToLower() == updated.PayMethodType.ToLower()
-                                && pm.PaymentMethodId != id);
+                .AnyAsync(pm => pm.PayMethodType.ToLower() == dto.PayMethodType.Trim().ToLower()
+                             && pm.PaymentMethodId != id);
 
             if (typeExists)
-                return BadRequest(new { message = $"Another payment method named '{updated.PayMethodType}' already exists." });
+                return BadRequest(new { message = $"Another payment method named '{dto.PayMethodType}' already exists." });
 
-            method.PayMethodType = updated.PayMethodType;
-
+            method.PayMethodType = dto.PayMethodType.Trim();
             await _db.SaveChangesAsync();
+
+            var response = new PaymentMethodResponseDto
+            {
+                PaymentMethodId = method.PaymentMethodId,
+                PayMethodType = method.PayMethodType
+            };
 
             return Ok(new
             {
                 message = $"Payment method updated to '{method.PayMethodType}' successfully.",
-                method  = new { method.PaymentMethodId, method.PayMethodType }
+                method = response
             });
         }
 
-      
-     
+
+
         [HttpDelete("delete/{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {

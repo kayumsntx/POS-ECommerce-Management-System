@@ -61,6 +61,11 @@ builder.Services.Configure<POSWebApi.Services.SslCommerzSettings>(
 builder.Services.AddHttpClient<POSWebApi.Services.ISslCommerzService, POSWebApi.Services.SslCommerzService>(c =>
     c.Timeout = TimeSpan.FromSeconds(30));
 
+
+//SteadFast
+
+builder.Services.AddHttpClient<POSWebApi.Services.SteadfastService>();
+
 // ── Swagger / OpenAPI ─────────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
