@@ -6,6 +6,7 @@ namespace POSWebApi.Models
         Confirmed = 2,  // Payment confirmed (legacy / future use)
         Approved=3,
         Cancelled = 4,   // Order cancelled
-        Delivered = 5
+        Shipped = 5,
+        Delivered = 6
     }
 }
