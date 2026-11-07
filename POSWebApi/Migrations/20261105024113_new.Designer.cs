@@ -12,8 +12,8 @@ using POSWebApi.Models;
 namespace POSWebApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261103171805_courier")]
-    partial class courier
+    [Migration("20261105024113_new")]
+    partial class @new
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -350,9 +350,6 @@ namespace POSWebApi.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderId"));
-
-                    b.Property<string>("CourierTrackingId")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("DiscountAmount")
                         .HasPrecision(18, 2)

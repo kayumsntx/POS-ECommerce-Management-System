@@ -121,9 +121,8 @@ namespace POSWebApi.Models
             modelBuilder.Entity<AppRole>().HasData(
                 new AppRole { Id = 1, Name = "Admin",       NormalizedName = "ADMIN",       ConcurrencyStamp = "1" },
                 new AppRole { Id = 2, Name = "User",         NormalizedName = "USER",         ConcurrencyStamp = "2" },
-                new AppRole { Id = 3, Name = "POSOperator",  NormalizedName = "POSOPERATOR",  ConcurrencyStamp = "3" },
-                new AppRole { Id = 4, Name = "Cashier",      NormalizedName = "CASHIER",      ConcurrencyStamp = "4" },
-                new AppRole { Id = 5, Name = "Salesman",     NormalizedName = "SALESMAN",     ConcurrencyStamp = "5" }
+                new AppRole { Id = 3, Name = "Cashier",      NormalizedName = "CASHIER",      ConcurrencyStamp = "3" }
+                
             );
         }
     }

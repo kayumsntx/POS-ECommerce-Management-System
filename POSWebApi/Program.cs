@@ -62,9 +62,7 @@ builder.Services.AddHttpClient<POSWebApi.Services.ISslCommerzService, POSWebApi.
     c.Timeout = TimeSpan.FromSeconds(30));
 
 
-//SteadFast
 
-builder.Services.AddHttpClient<POSWebApi.Services.SteadfastService>();
 
 // ── Swagger / OpenAPI ─────────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();

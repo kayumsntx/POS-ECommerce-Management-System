@@ -9,7 +9,7 @@ namespace POSWebApi.Controllers
 {
     [Route("api/[controller]")]  
     [ApiController]
-    [Authorize(Roles = "Admin,POSOperator,Cashier")]
+    [Authorize(Roles = "Admin,Cashier")]
     public class InventoryController : ControllerBase
     {
         private readonly AppDbContext _db;
@@ -85,7 +85,7 @@ namespace POSWebApi.Controllers
 
        
         [HttpPost("create")]
-        [Authorize(Roles = "Admin,POSOperator")]
+        [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> Create([FromBody] InventoryDto dto)
         {
            
@@ -132,7 +132,7 @@ namespace POSWebApi.Controllers
        
 
         [HttpPut("update/{id:int}")]
-        [Authorize(Roles = "Admin,POSOperator")]
+        [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> Update(int id, [FromBody] InventoryDto dto)
         {
             var inventory = await _db.Inventories.FindAsync(id);

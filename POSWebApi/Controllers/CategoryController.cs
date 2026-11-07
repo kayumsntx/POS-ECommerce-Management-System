@@ -9,7 +9,7 @@ namespace POSWebApi.Controllers
 {
     [Route("api/[controller]")]  
     [ApiController]
-    [Authorize(Roles = "Admin,PosOperator")]
+    [Authorize(Roles = "Admin,Cashier")]
     public class CategoryController : ControllerBase
     {
         private readonly AppDbContext _db;

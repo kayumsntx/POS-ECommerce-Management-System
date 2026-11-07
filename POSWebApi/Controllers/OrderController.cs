@@ -298,7 +298,7 @@ namespace POSWebApi.Controllers
    
         [HttpGet]
         [HttpGet("all")]
-        [Authorize(Roles = "Admin,POSOperator,Cashier,Salesman")]
+        [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> GetAllOrders()
         {
             // Stored procedure: dbo.sp_GetAllOrders
@@ -374,7 +374,7 @@ namespace POSWebApi.Controllers
 
         
         [HttpPatch("{id:int}/approve")]
-        [Authorize(Roles = "Admin,PosOperator,Salesman")]
+        [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> ApproveOrder(int id)
         {
             var order = await _db.Orders

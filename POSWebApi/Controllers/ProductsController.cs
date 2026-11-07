@@ -14,7 +14,7 @@ namespace POSWebApi.Controllers
         private readonly AppDbContext        _db;
         private readonly IWebHostEnvironment _env;
 
-        private const string NoImage       = "noimage.jpg";
+        private const string NoImage       = "noimage.png";
         private const long   MaxFileSizeBytes = 2 * 1024 * 1024; // 2 MB
 
         public ProductsController(AppDbContext db, IWebHostEnvironment env)
@@ -89,7 +89,7 @@ namespace POSWebApi.Controllers
             });
         }
         [HttpPost("create")]
-        [Authorize(Roles = "Admin,PosOperator")]
+        [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> Create([FromBody] ProductDto dto)
         {
           
@@ -139,7 +139,7 @@ namespace POSWebApi.Controllers
 
        
         [HttpPut("update/{id:int}")]
-        [Authorize(Roles = "Admin,PosOperator")]
+        [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> Update(int id, [FromBody] ProductDto dto)
         {
             var product = await _db.Products.FindAsync(id);
@@ -189,7 +189,7 @@ namespace POSWebApi.Controllers
 
       
         [HttpDelete("delete/{id:int}")]
-        [Authorize(Roles = "Admin,Operator")]
+        [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> Delete(int id)
         {
             var product = await _db.Products
@@ -215,7 +215,7 @@ namespace POSWebApi.Controllers
 
        
         [HttpPost("upload/{id:int}")]
-        [Authorize(Roles = "Admin,Operator")]
+        [Authorize(Roles = "Admin,Cashier")]
         public async Task<ActionResult<UploadResponse>> Upload(int id, IFormFile file)
         {
            
