@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -52,7 +52,7 @@ namespace POSWebApi.Controllers
                 return Forbid();   
 
             
-            bool isOnline = IsOnlineUser();
+            bool isOnline = IsOnlineUser() || dto.DeliveryAddress != null;
             var orderStatus = isOnline ? OrderStatus.Pending    
                                        : OrderStatus.Approved;
 
@@ -310,6 +310,23 @@ namespace POSWebApi.Controllers
         }
 
        
+        [HttpGet("my-orders")]
+        public async Task<IActionResult> GetMyOrders()
+        {
+            if (!TryGetCallerId(out int callerId))
+                return Unauthorized(new { message = "Unable to identify the authenticated user." });
+
+            var rows = await _db.Database
+                .SqlQueryRaw<OrderSpRow>("EXEC dbo.sp_GetOrdersByUserId @UserId",
+                    new SqlParameter("@UserId", callerId))
+                .ToListAsync();
+
+            var all = GroupOrderRows(rows);
+            // Show own online orders
+            var onlineOrders = all.Where(o => o.OrderType == "Online" || o.ShippingAmount > 0).ToList();
+            return Ok(onlineOrders);
+        }
+
         [HttpGet("user/{userId:int}")]
         public async Task<IActionResult> GetOrdersByUserId(int userId)
         {
@@ -319,7 +336,9 @@ namespace POSWebApi.Controllers
                     new SqlParameter("@UserId", userId))
                 .ToListAsync();
 
-            return Ok(GroupOrderRows(rows));
+            var all = GroupOrderRows(rows);
+            var onlineOrders = all.Where(o => o.OrderType == "Online" || o.ShippingAmount > 0).ToList();
+            return Ok(onlineOrders.Count > 0 ? onlineOrders : all);
         }
 
        

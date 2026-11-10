@@ -21,14 +21,21 @@ namespace POSWebApi.Controllers
 
        
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
-           
-            var inventory = await _db.Database
-                .SqlQueryRaw<InventoryResponseDto>("EXEC dbo.sp_GetAllInventories")
-                .ToListAsync();
+            try
+            {
+                var inventory = await _db.Database
+                    .SqlQueryRaw<InventoryResponseDto>("EXEC dbo.sp_GetAllInventories")
+                    .ToListAsync();
 
-            return Ok(inventory);
+                return Ok(inventory);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         
@@ -50,6 +57,7 @@ namespace POSWebApi.Controllers
 
         
         [HttpGet("product/{productId:int}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetByProduct(int productId)
         {
            

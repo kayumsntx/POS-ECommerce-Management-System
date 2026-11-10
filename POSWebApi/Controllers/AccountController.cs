@@ -17,16 +17,19 @@ namespace POSWebApi.Controllers
        
         private readonly UserManager<AppUser>   _userManager;  
         private readonly SignInManager<AppUser> _signInManager;
-        private readonly IConfiguration         _config;        
+        private readonly IConfiguration         _config;
+        private readonly IWebHostEnvironment    _env;
 
         public AccountController(
             UserManager<AppUser>   userManager,
             SignInManager<AppUser> signInManager,
-            IConfiguration         config)
+            IConfiguration         config,
+            IWebHostEnvironment    env)
         {
             _userManager   = userManager;
             _signInManager = signInManager;
             _config        = config;
+            _env           = env;
         }
 
         
@@ -51,9 +54,8 @@ namespace POSWebApi.Controllers
           
             if (!result.Succeeded)
             {
-               
-                var errors = result.Errors.Select(e => e.Description);
-                return BadRequest(new { errors });
+                var errors = result.Errors.Select(e => e.Description).ToList();
+                return BadRequest(new { errors, message = string.Join(" ", errors) });
             }
 
            
@@ -89,6 +91,7 @@ namespace POSWebApi.Controllers
             {
                 Token     = token,
                 UserName  = user.UserName!,
+                FullName  = user.FullName ?? user.UserName!,
                 Email     = user.Email!,
                 Role      = roles.FirstOrDefault() ?? "User",
                 ExpiresAt = DateTime.UtcNow.AddMinutes(expiryMins)
@@ -166,6 +169,15 @@ namespace POSWebApi.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteAccount(int id)
         {
+            var currentCallerId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                               ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                               ?? User.FindFirst("sub")?.Value;
+
+            if (!string.IsNullOrEmpty(currentCallerId) && int.TryParse(currentCallerId, out int callerId) && callerId == id)
+            {
+                return BadRequest(new { message = "You cannot delete your own account." });
+            }
+
             var user = await _userManager.FindByIdAsync(id.ToString());
             if (user == null)
                 return NotFound(new { message = $"User with ID {id} not found." });
@@ -181,14 +193,169 @@ namespace POSWebApi.Controllers
         }
 
         // ──────────────────────────────────────────────────────────────────────
-        // PRIVATE HELPER — builds the JWT token
+        // PROFILE & ACCOUNT MANAGEMENT (For logged-in User/Admin/Cashier)
         // ──────────────────────────────────────────────────────────────────────
+
+        [HttpGet("profile")]
+        [Authorize]
+        public async Task<IActionResult> GetProfile()
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null)
+                return Unauthorized(new { message = "User not found or unauthorized." });
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new UserProfileDto
+            {
+                Id             = user.Id,
+                UserName       = user.UserName ?? string.Empty,
+                FullName       = user.FullName ?? user.UserName ?? string.Empty,
+                Email          = user.Email ?? string.Empty,
+                PhoneNumber    = user.PhoneNumber ?? string.Empty,
+                Role           = roles.FirstOrDefault() ?? "User",
+                DefaultAddress = user.DefaultAddress ?? string.Empty,
+                AvatarUrl      = user.AvatarUrl ?? string.Empty
+            });
+        }
+
+        [HttpPut("profile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null)
+                return Unauthorized(new { message = "User not found or unauthorized." });
+
+            if (!string.IsNullOrWhiteSpace(dto.FullName))
+                user.FullName = dto.FullName.Trim();
+
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+                user.PhoneNumber = dto.PhoneNumber.Trim();
+
+            if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email.Trim() != user.Email)
+            {
+                var email = dto.Email.Trim();
+                user.Email = email;
+                user.NormalizedEmail = email.ToUpperInvariant();
+            }
+
+            if (dto.DefaultAddress != null)
+                user.DefaultAddress = dto.DefaultAddress.Trim();
+
+            if (dto.AvatarUrl != null)
+                user.AvatarUrl = dto.AvatarUrl.Trim();
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description);
+                return BadRequest(new { errors });
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new
+            {
+                message = "Profile updated successfully!",
+                profile = new UserProfileDto
+                {
+                    Id             = user.Id,
+                    UserName       = user.UserName ?? string.Empty,
+                    FullName       = user.FullName ?? user.UserName ?? string.Empty,
+                    Email          = user.Email ?? string.Empty,
+                    PhoneNumber    = user.PhoneNumber ?? string.Empty,
+                    Role           = roles.FirstOrDefault() ?? "User",
+                    DefaultAddress = user.DefaultAddress ?? string.Empty,
+                    AvatarUrl      = user.AvatarUrl ?? string.Empty
+                }
+            });
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null)
+                return Unauthorized(new { message = "User not found or unauthorized." });
+
+            var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description);
+                return BadRequest(new { message = "Failed to update password.", errors });
+            }
+
+            return Ok(new { message = "Password updated successfully!" });
+        }
+
+        [HttpPost("upload-avatar")]
+        [Authorize]
+        public async Task<IActionResult> UploadAvatar(IFormFile file)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null)
+                return Unauthorized(new { message = "User not found or unauthorized." });
+
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "No file uploaded." });
+
+            if (file.Length > 2 * 1024 * 1024)
+                return BadRequest(new { message = "File size must not exceed 2 MB." });
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+                return BadRequest(new { message = "Only JPG, PNG, and WEBP image files are allowed." });
+
+            var avatarsFolder = Path.Combine(_env.WebRootPath, "images", "avatars");
+            if (!Directory.Exists(avatarsFolder))
+                Directory.CreateDirectory(avatarsFolder);
+
+            var fileName = $"avatar_{user.Id}_{Guid.NewGuid():N}{ext}";
+            var filePath = Path.Combine(avatarsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            user.AvatarUrl = $"/images/avatars/{fileName}";
+            await _userManager.UpdateAsync(user);
+
+            return Ok(new { message = "Avatar uploaded successfully!", avatarUrl = user.AvatarUrl });
+        }
+
+        // ──────────────────────────────────────────────────────────────────────
+        // PRIVATE HELPERS
+        // ──────────────────────────────────────────────────────────────────────
+
+        private async Task<AppUser?> GetCurrentUserAsync()
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                       ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(idClaim))
+            {
+                var nameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
+                if (!string.IsNullOrEmpty(nameClaim))
+                {
+                    return await _userManager.FindByNameAsync(nameClaim);
+                }
+                return null;
+            }
+
+            return await _userManager.FindByIdAsync(idClaim);
+        }
+
         private string GenerateJwtToken(AppUser user, IList<string> roles)
         {
-           
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub,   user.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier,     user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email!),
                 new Claim(ClaimTypes.Name,               user.UserName!),
                 new Claim(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString())

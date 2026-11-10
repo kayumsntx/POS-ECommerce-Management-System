@@ -258,10 +258,23 @@ namespace POSWebApi.Controllers
        
         private IActionResult Respond(PaymentResult r, string kind)
         {
+            var status = (r.Outcome == Outcome.Paid ? "success" : kind == "success" ? "fail" : kind);
+
+            if (r.Order != null && r.Order.IsOnlineOrder)
+            {
+                var tranParam = !string.IsNullOrWhiteSpace(r.Order.PaymentTransactionId)
+                    ? $"&tranId={Uri.EscapeDataString(r.Order.PaymentTransactionId)}"
+                    : "";
+                var amountParam = r.Order.PayableAmount > 0
+                    ? $"&amount={r.Order.PayableAmount.ToString("F2", CultureInfo.InvariantCulture)}"
+                    : "";
+                return Redirect($"http://localhost:4200/payment-success?status={status}&orderId={r.Order.OrderId}{tranParam}{amountParam}");
+            }
+
             if (!string.IsNullOrWhiteSpace(_settings.PaymentResultUrl))
             {
                 var sep = _settings.PaymentResultUrl.Contains('?') ? "&" : "?";
-                return Redirect($"{_settings.PaymentResultUrl}{sep}status={(r.Outcome == Outcome.Paid ? "success" : kind == "success" ? "fail" : kind)}" +
+                return Redirect($"{_settings.PaymentResultUrl}{sep}status={status}" +
                                 $"&orderId={r.Order?.OrderId}");
             }
 

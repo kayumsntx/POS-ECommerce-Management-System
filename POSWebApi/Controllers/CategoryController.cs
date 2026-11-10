@@ -9,7 +9,6 @@ namespace POSWebApi.Controllers
 {
     [Route("api/[controller]")]  
     [ApiController]
-    [Authorize(Roles = "Admin,Cashier")]
     public class CategoryController : ControllerBase
     {
         private readonly AppDbContext _db;
@@ -21,6 +20,7 @@ namespace POSWebApi.Controllers
 
       
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
            
@@ -33,6 +33,7 @@ namespace POSWebApi.Controllers
 
 
         [HttpGet("{id:int}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
            
@@ -51,6 +52,7 @@ namespace POSWebApi.Controllers
 
        
         [HttpPost]
+        [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> Create([FromBody] CategoryDto dto)
         {
            
@@ -78,6 +80,7 @@ namespace POSWebApi.Controllers
 
       
         [HttpPut("update/{id:int}")]
+        [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> Update(int id, [FromBody] CategoryDto dto)
         {
             var category = await _db.Categories.FindAsync(id);
@@ -107,6 +110,7 @@ namespace POSWebApi.Controllers
 
       
         [HttpDelete("delete/{id:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var category = await _db.Categories

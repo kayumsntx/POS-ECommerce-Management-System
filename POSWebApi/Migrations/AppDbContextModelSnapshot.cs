@@ -173,22 +173,8 @@ namespace POSWebApi.Migrations
                         {
                             Id = 3,
                             ConcurrencyStamp = "3",
-                            Name = "POSOperator",
-                            NormalizedName = "POSOPERATOR"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            ConcurrencyStamp = "4",
                             Name = "Cashier",
                             NormalizedName = "CASHIER"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            ConcurrencyStamp = "5",
-                            Name = "Salesman",
-                            NormalizedName = "SALESMAN"
                         });
                 });
 
@@ -203,8 +189,14 @@ namespace POSWebApi.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("AvatarUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DefaultAddress")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
@@ -213,6 +205,9 @@ namespace POSWebApi.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<string>("FullName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
