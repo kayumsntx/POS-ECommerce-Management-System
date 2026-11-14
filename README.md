@@ -1,6 +1,6 @@
 # POS & E-Commerce Management System API
 
-A RESTful backend API for a Point of Sale (POS) and E-Commerce Management System, developed using **ASP.NET Core 9 Web API** and **Microsoft SQL Server**.
+A RESTful backend API for a Point of Sale (POS) and E-Commerce Management System, developed using **ASP.NET Core 9 Web API** and **Microsoft SQL Server**. Using Angular and React on Frontend.
 
 The project provides backend functionality for product management, inventory tracking, order processing, payment handling, user authentication, and return management.
 
